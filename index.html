@@ -1,75 +1,281 @@
-
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>AI vs Human Forecast Dashboard — Behavioural Finance</title>
+  <title>Interactive Behavioural Finance Dashboard — AI vs Human Forecast</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
   <style>
-    body{font-family:Arial, sans-serif;margin:18px;background:#f7fafc;color:#0f172a}
-    .app{max-width:1100px;margin:0 auto;background:#fff;padding:18px;border-radius:12px;box-shadow:0 6px 24px rgba(15,23,42,0.08)}
-    h1{font-size:22px;margin-bottom:8px}
-    label{font-size:13px;color:#334155}
-    select,input{padding:8px;border-radius:6px;border:1px solid #e2e8f0;width:100%}
-    table{width:100%;border-collapse:collapse;margin-top:12px}
-    th,td{padding:8px;border-bottom:1px solid #e5e7eb;font-size:14px;text-align:left}
-    .btn{background:#2563eb;color:white;padding:8px 12px;border-radius:6px;border:none;cursor:pointer;margin-top:8px}
+    :root{--bg:#f8fafc;--card:#fff;--muted:#64748b;--accent:#0b63d3;--success:#16a34a;--danger:#ef4444}
+    body{font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial; background:var(--bg); margin:0; padding:18px; color:#0f172a}
+    .wrap{max-width:1100px;margin:0 auto}
+    .card{background:var(--card);border-radius:10px;padding:18px;box-shadow:0 8px 30px rgba(2,6,23,0.06);margin-bottom:14px}
+    h1{margin:0;font-size:20px}
+    p.lead{margin:6px 0 12px;color:var(--muted)}
+    .controls{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+    label{font-size:13px;color:#334155;display:block;margin-bottom:6px}
+    select,input{padding:10px;border-radius:8px;border:1px solid #e6edf3;background:white;min-width:0}
+    input[type="text"]{width:100%}
+    .btn{background:var(--accent);color:white;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.secondary{background:#64748b}
+    .row{display:flex;gap:12px}
+    .col{flex:1}
+    .side{width:360px}
+    table{width:100%;border-collapse:collapse;margin-top:8px}
+    th,td{padding:8px;border-bottom:1px solid #eef2f7;text-align:left;font-size:14px}
+    .muted{color:var(--muted);font-size:13px}
+    .badge{display:inline-block;padding:6px 8px;border-radius:999px;background:#eef2ff;color:#0b63d3;font-weight:700}
+    .insight{font-size:14px;color:#0f172a;margin-top:8px}
+    .kpi{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .kpi .item{background:#f1f5f9;padding:8px;border-radius:8px;min-width:120px}
+    .green{color:var(--success);font-weight:700}
+    .red{color:var(--danger);font-weight:700}
+    .note{font-size:13px;color:var(--muted);margin-top:6px}
+    footer{font-size:13px;color:var(--muted);margin-top:18px;text-align:center}
+    .legend{display:flex;gap:8px;margin-top:8px;align-items:center}
+    .legend .box{width:12px;height:12px;border-radius:2px}
   </style>
 </head>
 <body>
-<div class="app">
-  <h1>Interactive Behavioural Finance Dashboard</h1>
-  <p>AI vs Human Stock Forecasting • Bias Detection • Error Analytics</p>
+  <div class="wrap">
+    <div class="card">
+      <h1>Interactive Behavioural Finance Dashboard</h1>
+      <p class="lead">Compare Human vs Excel vs AI forecasts for Asian Paints, Cipla and SBI. Enter human predictions to see inferred bias, live chart updates and error calculations.</p>
+      <div class="controls">
+        <div style="min-width:220px">
+          <label for="company">Select Company</label>
+          <select id="company">
+            <option value="asian">Asian Paints</option>
+            <option value="cipla">Cipla</option>
+            <option value="sbi">SBI</option>
+          </select>
+        </div>
 
-  <label>Select Company</label>
-  <select id="companySelect">
-    <option value="asian">Asian Paints</option>
-    <option value="cipla">Cipla</option>
-    <option value="sbi">SBI</option>
-  </select>
+        <div style="min-width:260px">
+          <label for="humanPred">Human Predictions (comma-separated, 1–6 values)</label>
+          <input type="text" id="humanPred" placeholder="e.g. 2600,2450,2700,2500,2550,2400" />
+        </div>
 
-  <label style="margin-top:12px">Enter Human Predictions (comma separated)</label>
-  <input id="humanInput" placeholder="2600,2450,2700,2500,2550,2400">
+        <div style="min-width:160px">
+          <label>&nbsp;</label>
+          <div style="display:flex;gap:8px">
+            <button class="btn" id="runBtn">Run Analysis</button>
+            <button class="btn secondary" id="resetBtn">Reset</button>
+          </div>
+        </div>
+      </div>
 
-  <button class="btn" onclick="runAnalysis()">Run Analysis</button>
+      <div class="row">
+        <div class="col card" style="padding:12px">
+          <canvas id="mainChart" height="220"></canvas>
+          <div class="legend">
+            <div style="display:flex;gap:6px;align-items:center"><div class="box" style="background:#2563eb"></div>Historical</div>
+            <div style="display:flex;gap:6px;align-items:center"><div class="box" style="background:#06b6d4"></div>AI Forecast</div>
+            <div style="display:flex;gap:6px;align-items:center"><div class="box" style="background:#f97316"></div>Excel Forecast</div>
+            <div style="display:flex;gap:6px;align-items:center"><div class="box" style="background:#10b981"></div>Human Prediction</div>
+            <div style="display:flex;gap:6px;align-items:center"><div class="box" style="background:#ef4444"></div>Actual (Nov-25)</div>
+          </div>
+        </div>
 
-  <div id="result"></div>
-</div>
+        <div class="side card">
+          <div style="font-weight:700">Quick Summary</div>
+          <div class="muted">Enter 1–6 human forecasts. The dashboard will:</div>
+          <ul class="muted">
+            <li>Plot historical data (Aug-24 → Oct-25)</li>
+            <li>Add your human prediction as the Nov-25 point on the chart</li>
+            <li>Show AI & Excel forecasts and actual Nov-25</li>
+            <li>Compute error and infer likely behavioural bias</li>
+          </ul>
+
+          <div class="kpi" id="kpis">
+            <div class="item">Human mean: <span id="humanMean">—</span></div>
+            <div class="item">AI (Python ETS): <span id="aiVal">—</span></div>
+            <div class="item">Excel ETS: <span id="excelVal">—</span></div>
+            <div class="item">Actual (Nov-25): <span id="actualVal">—</span></div>
+          </div>
+
+          <div class="insight" id="insightBox"></div>
+
+          <div style="margin-top:10px">
+            <div style="font-weight:700">Participant Inference</div>
+            <div class="note">Table shows inferred bias per participant and % error</div>
+            <div id="tableWrap" style="max-height:260px;overflow:auto;margin-top:8px"></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><strong>How to use</strong><div class="muted">Type or paste human forecasts and click <em>Run Analysis</em>. Use reset to reload example defaults.</div></div>
+        <div><button class="btn" id="exportCsv">Export Inference CSV</button></div>
+      </div>
+    </div>
+
+    <footer>Created for Behavioural Finance project — AI vs Human Forecasting. Works offline after initial load (Chart.js CDN required).</footer>
+  </div>
 
 <script>
-const dataset = {
-  asian:{actual:2876.6,last:2510},
-  cipla:{actual:1511.8,last:1501.65},
-  sbi:{actual:972.6,last:937}
+// Dataset from your report (historical 15 months and actual Nov-25, Excel & AI forecasts)
+const DATA = {
+  asian: {
+    name:'Asian Paints',
+    hist:[3126.8,3328.4,2938.1,2479.95,2282.05,2301.05,2179.95,2337.7,2423.3,2260.05,2341.35,2396,2517.4,2350.15,2510],
+    actual:2876.6, excel:2466.117, ai:2485.50, last:2510
+  },
+  cipla: {
+    name:'Cipla',
+    hist:[1655.75,1654,1553.2,1534.4,1529.5,1479.35,1410.95,1441.7,1549.65,1464.85,1505.3,1554.2,1589.65,1501.6,1501.65],
+    actual:1511.8, excel:1495.677, ai:1512.30, last:1501.65
+  },
+  sbi: {
+    name:'SBI',
+    hist:[815.65,787.6,820.5,839,795.95,773.1,688.25,771.6,788.15,812.4,820.35,796.25,802.35,872.55,937],
+    actual:972.6, excel:986.844, ai:948.10, last:937
+  }
 };
 
-function runAnalysis(){
-  const company = document.getElementById('companySelect').value;
-  const vals = document.getElementById('humanInput').value.split(',').map(x=>Number(x.trim()));
-  const actual = dataset[company].actual;
-  const last = dataset[company].last;
+const months = ['Aug-24','Sep-24','Oct-24','Nov-24','Dec-24','Jan-25','Feb-25','Mar-25','Apr-25','May-25','Jun-25','Jul-25','Aug-25','Sep-25','Oct-25','Nov-25'];
 
-  let table = "<table><tr><th>Prediction</th><th>% Error</th><th>Bias</th></tr>";
+// Chart setup
+let chart=null;
+function drawChart(key, humanPoint=null){
+  const ctx = document.getElementById('mainChart').getContext('2d');
+  const d = DATA[key];
+  const hist = d.hist.slice();
+  const labels = months;
+  // datasets
+  const histDataset = {label:'Historical', data: hist, borderColor:'#2563eb', tension:0.2, pointRadius:3, borderWidth:2};
+  const aiDataset = {label:'AI Forecast', data: Array(15).fill(null).concat([d.ai]), borderColor:'#06b6d4', borderDash:[6,4], tension:0.2, pointRadius:4};
+  const excelDataset = {label:'Excel Forecast', data: Array(15).fill(null).concat([d.excel]), borderColor:'#f97316', borderDash:[3,3], tension:0.2, pointRadius:4};
+  const actualDataset = {label:'Actual (Nov-25)', data: Array(15).fill(null).concat([d.actual]), borderColor:'#ef4444', pointStyle:'rect', pointRadius:6, borderWidth:0, showLine:false};
+  // human dataset (if provided)
+  const humanDataArray = Array(15).fill(null).concat([humanPoint !== null ? humanPoint : null]);
+  const humanDataset = {label:'Human Prediction', data: humanDataArray, borderColor:'#10b981', pointStyle:'triangle', pointRadius:6, showLine:false};
 
-  vals.forEach(v=>{
-    let pct = ((v-actual)/actual*100).toFixed(2);
-    let bias = inferBias(v, actual, last);
-    table += `<tr><td>${v}</td><td>${pct}%</td><td>${bias}</td></tr>`;
+  const datasets = [histDataset, aiDataset, excelDataset, humanDataset, actualDataset];
+
+  if (chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type:'line',
+    data:{labels:labels, datasets:datasets},
+    options:{
+      plugins:{legend:{position:'bottom'}},
+      scales:{y:{beginAtZero:false}}
+    }
   });
 
-  table += "</table>";
-
-  document.getElementById('result').innerHTML = table;
+  // draw an annotation: a vertical line + error arrow if humanPoint exists
+  if (humanPoint !== null){
+    // draw a small overlay using Chart.js plugin? For simplicity, we will add a HTML summary below (error section)
+  }
 }
 
-function inferBias(pred, actual, last){
-  if(Math.abs(pred-last)<=2) return "Anchoring";
-  if(pred>actual+actual*0.05) return "Optimism / Overconfidence";
-  if(pred<actual-actual*0.05) return "Pessimism / Risk Aversion";
-  return "Representativeness";
+// bias inference rules
+function inferBias(pred, actual, last, groupMean, reasonText){
+  const reason = (reasonText||'').toLowerCase();
+  if (reason.includes('anchor') || reason.includes('last') || Math.abs(pred - last) / last < 0.02) return 'Anchoring';
+  if (reason.includes('news') || reason.includes('approval') || reason.includes('festival')) return 'Availability';
+  if (reason.includes('everyone') || reason.includes('group') || Math.abs(pred - groupMean)/groupMean < 0.02) return 'Herding';
+  if (pred > actual * 1.05) return 'Overconfidence / Optimism';
+  if (pred < actual * 0.95) return 'Pessimism / Risk Aversion';
+  if (reason.includes('usually') || reason.includes('always') || reason.includes('repeat')) return 'Representativeness';
+  return 'Unclear / Mixed';
 }
+
+function biasExplanation(bias){
+  const map = {
+    'Anchoring': 'Forecaster anchored to the last observed price; shows little adjustment.',
+    'Availability': 'Recent news or vivid events influenced the estimate.',
+    'Herding': 'Prediction aligns closely with peers; social influence likely.',
+    'Overconfidence / Optimism': 'Forecaster presents an optimistic, possibly overconfident estimate.',
+    'Pessimism / Risk Aversion': 'Forecaster is conservative, expecting downside.',
+    'Representativeness': 'Forecaster matched the situation to a familiar past pattern.',
+    'Unclear / Mixed': 'No clear rule-based bias identified.'
+  };
+  return map[bias] || '';
+}
+
+// helpers
+function numberArrayFromInput(s){
+  return s.split(',').map(x=>Number(x.trim())).filter(x=>!isNaN(x));
+}
+
+function runAnalysis(){
+  const key = document.getElementById('company').value;
+  const input = document.getElementById('humanPred').value.trim();
+  const d = DATA[key];
+  if (!input){ alert('Please enter at least one human prediction'); return; }
+  const preds = numberArrayFromInput(input);
+  if (preds.length === 0){ alert('No valid numbers found'); return; }
+  const mean = preds.reduce((a,b)=>a+b,0)/preds.length;
+  // update KPIs
+  document.getElementById('humanMean').innerText = mean.toFixed(2);
+  document.getElementById('aiVal').innerText = d.ai.toFixed(2);
+  document.getElementById('excelVal').innerText = d.excel.toFixed(2);
+  document.getElementById('actualVal').innerText = d.actual.toFixed(2);
+
+  // draw chart with human point
+  drawChart(key, Number(mean.toFixed(2)));
+
+  // prepare table rows per participant including bias inference
+  let rows = '<table><thead><tr><th>Participant</th><th>Prediction</th><th>% Error</th><th>Bias</th><th>Interpretation</th></tr></thead><tbody>';
+  const groupMean = preds.reduce((a,b)=>a+b,0)/preds.length;
+  for (let i=0;i<preds.length;i++){
+    const p = preds[i];
+    const pct = ((p - d.actual)/d.actual*100).toFixed(2);
+    const inferred = inferBias(p, d.actual, d.last, groupMean, '');
+    rows += `<tr><td>Person ${i+1}</td><td>${p}</td><td>${pct}%</td><td>${inferred}</td><td>${biasExplanation(inferred)}</td></tr>`;
+  }
+  rows += '</tbody></table>';
+  document.getElementById('tableWrap').innerHTML = rows;
+
+  // summary insight box
+  const humanErr = (mean - d.actual);
+  const humanPct = ((mean - d.actual)/d.actual*100).toFixed(2);
+  const aiErr = (d.ai - d.actual).toFixed(2);
+  const excelErr = (d.excel - d.actual).toFixed(2);
+  let insight = `<div><strong>Summary:</strong> Human mean = <b>${mean.toFixed(2)}</b> (${humanPct}% error). AI error = ${aiErr} | Excel error = ${excelErr}.</div>`;
+  insight += `<div class="note">${Math.abs(humanPct) <= 3 ? '<span class="green">Human forecast is very accurate (≤3% error)</span>' : (Math.abs(humanPct) >= 10 ? '<span class="red">Large human error (≥10%)</span>' : '<span>Moderate human error</span>')}</div>`;
+  // infer overall bias for group using simple rule
+  let overallBias = 'Mixed';
+  if (Math.abs(mean - d.last)/d.last < 0.02) overallBias = 'Anchoring (group)';
+  else if (mean > d.actual*1.05) overallBias = 'Overconfidence/Optimism (group)';
+  else if (mean < d.actual*0.95) overallBias = 'Pessimism/Risk aversion (group)';
+  insight += `<div style="margin-top:8px"><strong>Likely group bias:</strong> ${overallBias}</div>`;
+  document.getElementById('insightBox').innerHTML = insight;
+}
+
+function resetDefaults(){
+  const key = document.getElementById('company').value;
+  const presets = {
+    asian:'2600,2450,2700,2500,2550,2400',
+    cipla:'1530,1500,1580,1470,1520,1550',
+    sbi:'980,900,1000,940,950,960'
+  };
+  document.getElementById('humanPred').value = presets[key];
+  runAnalysis();
+}
+
+// wire events
+document.getElementById('runBtn').addEventListener('click', runAnalysis);
+document.getElementById('resetBtn').addEventListener('click', resetDefaults);
+document.getElementById('company').addEventListener('change', ()=>{ resetDefaults(); });
+document.getElementById('exportCsv').addEventListener('click', ()=>{
+  const tbl = document.querySelector('#tableWrap table');
+  if (!tbl) return alert('Run analysis first');
+  let lines=[];
+  tbl.querySelectorAll('tr').forEach((tr,idx)=>{
+    const cols = Array.from(tr.querySelectorAll('th,td')).map(td=>td.innerText.replace(/\n/g,' '));
+    lines.push(cols.join(','));
+  });
+  const blob = new Blob([lines.join('\\n')],{type:'text/csv'});
+  const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='inference_table.csv'; a.click(); URL.revokeObjectURL(url);
+});
+
+// init
+resetDefaults();
 </script>
-
 </body>
 </html>
