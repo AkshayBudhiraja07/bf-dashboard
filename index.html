@@ -1,0 +1,75 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AI vs Human Forecast Dashboard — Behavioural Finance</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
+  <style>
+    body{font-family:Arial, sans-serif;margin:18px;background:#f7fafc;color:#0f172a}
+    .app{max-width:1100px;margin:0 auto;background:#fff;padding:18px;border-radius:12px;box-shadow:0 6px 24px rgba(15,23,42,0.08)}
+    h1{font-size:22px;margin-bottom:8px}
+    label{font-size:13px;color:#334155}
+    select,input{padding:8px;border-radius:6px;border:1px solid #e2e8f0;width:100%}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:8px;border-bottom:1px solid #e5e7eb;font-size:14px;text-align:left}
+    .btn{background:#2563eb;color:white;padding:8px 12px;border-radius:6px;border:none;cursor:pointer;margin-top:8px}
+  </style>
+</head>
+<body>
+<div class="app">
+  <h1>Interactive Behavioural Finance Dashboard</h1>
+  <p>AI vs Human Stock Forecasting • Bias Detection • Error Analytics</p>
+
+  <label>Select Company</label>
+  <select id="companySelect">
+    <option value="asian">Asian Paints</option>
+    <option value="cipla">Cipla</option>
+    <option value="sbi">SBI</option>
+  </select>
+
+  <label style="margin-top:12px">Enter Human Predictions (comma separated)</label>
+  <input id="humanInput" placeholder="2600,2450,2700,2500,2550,2400">
+
+  <button class="btn" onclick="runAnalysis()">Run Analysis</button>
+
+  <div id="result"></div>
+</div>
+
+<script>
+const dataset = {
+  asian:{actual:2876.6,last:2510},
+  cipla:{actual:1511.8,last:1501.65},
+  sbi:{actual:972.6,last:937}
+};
+
+function runAnalysis(){
+  const company = document.getElementById('companySelect').value;
+  const vals = document.getElementById('humanInput').value.split(',').map(x=>Number(x.trim()));
+  const actual = dataset[company].actual;
+  const last = dataset[company].last;
+
+  let table = "<table><tr><th>Prediction</th><th>% Error</th><th>Bias</th></tr>";
+
+  vals.forEach(v=>{
+    let pct = ((v-actual)/actual*100).toFixed(2);
+    let bias = inferBias(v, actual, last);
+    table += `<tr><td>${v}</td><td>${pct}%</td><td>${bias}</td></tr>`;
+  });
+
+  table += "</table>";
+
+  document.getElementById('result').innerHTML = table;
+}
+
+function inferBias(pred, actual, last){
+  if(Math.abs(pred-last)<=2) return "Anchoring";
+  if(pred>actual+actual*0.05) return "Optimism / Overconfidence";
+  if(pred<actual-actual*0.05) return "Pessimism / Risk Aversion";
+  return "Representativeness";
+}
+</script>
+
+</body>
+</html>
